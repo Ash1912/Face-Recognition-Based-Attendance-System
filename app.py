@@ -20,7 +20,7 @@ def datetoday2():
 
 
 #### Initializing VideoCapture object to access WebCam
-face_detector = cv2.CascadeClassifier('static/haarcascade_frontalface_default.xml')
+face_detector = cv2.CascadeClassifier(cv2.data.haarcascades+'haarcascade_frontalface_default.xml')
 cap = cv2.VideoCapture(0)
 
 
@@ -110,7 +110,7 @@ def start():
     ret = True
     while ret:
         ret,frame = cap.read()
-        if extract_faces(frame)!=():
+        if extract_faces(frame) != ():
             (x,y,w,h) = extract_faces(frame)[0]
             cv2.rectangle(frame,(x, y), (x+w, y+h), (255, 0, 20), 2)
             face = cv2.resize(frame[y:y+h,x:x+w], (50, 50))

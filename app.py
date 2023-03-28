@@ -110,7 +110,7 @@ def start():
     ret = True
     while ret:
         ret,frame = cap.read()
-        if extract_faces(frame)!=():
+        if extract_faces(frame) != ():
             (x,y,w,h) = extract_faces(frame)[0]
             cv2.rectangle(frame,(x, y), (x+w, y+h), (255, 0, 20), 2)
             face = cv2.resize(frame[y:y+h,x:x+w], (50, 50))

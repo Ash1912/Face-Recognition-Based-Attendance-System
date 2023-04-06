@@ -8,7 +8,11 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
+<<<<<<< HEAD
+set VIRTUAL_ENV=C:\Users\KIIT\PythonPrograms\pythonProject\Face_recognition_attendance_system\venv
+=======
 set VIRTUAL_ENV=K:\Technical Works\Projects\Face-Recognition-Based-Attendance-System\venv
+>>>>>>> 9cfcd47aa7bfc2f9bd83c94b068fc6d84d45a7c5
 
 if not defined PROMPT set PROMPT=$P$G
 
@@ -25,6 +29,10 @@ if defined _OLD_VIRTUAL_PATH set PATH=%_OLD_VIRTUAL_PATH%
 if not defined _OLD_VIRTUAL_PATH set _OLD_VIRTUAL_PATH=%PATH%
 
 set PATH=%VIRTUAL_ENV%\Scripts;%PATH%
+<<<<<<< HEAD
+set VIRTUAL_ENV_PROMPT=(venv) 
+=======
+>>>>>>> 9cfcd47aa7bfc2f9bd83c94b068fc6d84d45a7c5
 
 :END
 if defined _OLD_CODEPAGE (

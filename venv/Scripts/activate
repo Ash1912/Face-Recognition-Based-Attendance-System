@@ -28,10 +28,6 @@ deactivate () {
     fi
 
     unset VIRTUAL_ENV
-<<<<<<< HEAD
-    unset VIRTUAL_ENV_PROMPT
-=======
->>>>>>> 9cfcd47aa7bfc2f9bd83c94b068fc6d84d45a7c5
     if [ ! "${1:-}" = "nondestructive" ] ; then
     # Self destruct!
         unset -f deactivate
@@ -41,11 +37,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-<<<<<<< HEAD
-VIRTUAL_ENV="C:\Users\KIIT\PythonPrograms\pythonProject\Face_recognition_attendance_system\venv"
-=======
 VIRTUAL_ENV="K:\Technical Works\Projects\Face-Recognition-Based-Attendance-System\venv"
->>>>>>> 9cfcd47aa7bfc2f9bd83c94b068fc6d84d45a7c5
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
@@ -64,11 +56,6 @@ if [ -z "${VIRTUAL_ENV_DISABLE_PROMPT:-}" ] ; then
     _OLD_VIRTUAL_PS1="${PS1:-}"
     PS1="(venv) ${PS1:-}"
     export PS1
-<<<<<<< HEAD
-    VIRTUAL_ENV_PROMPT="(venv) "
-    export VIRTUAL_ENV_PROMPT
-=======
->>>>>>> 9cfcd47aa7bfc2f9bd83c94b068fc6d84d45a7c5
 fi
 
 # This should detect bash and zsh, which have a hash command that must

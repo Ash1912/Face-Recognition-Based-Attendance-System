@@ -17,9 +17,5 @@ if defined _OLD_VIRTUAL_PATH (
 set _OLD_VIRTUAL_PATH=
 
 set VIRTUAL_ENV=
-<<<<<<< HEAD
-set VIRTUAL_ENV_PROMPT=
-=======
->>>>>>> 9cfcd47aa7bfc2f9bd83c94b068fc6d84d45a7c5
 
 :END

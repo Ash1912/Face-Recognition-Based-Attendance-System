@@ -2,7 +2,7 @@
     position: relative;
     height: 100vh;
     min-height: 500px;
-    background: url(../imgs/header.jpg) no-repeat center center fixed;
+    background: url(../static/assets/imgs/header.jpg) no-repeat center center fixed;
     background-size: cover;
     overflow: hidden;
 
@@ -30,14 +30,14 @@
         }
 
         .title {
-            font-size: calc(30px + (70 - 30) * ((100vw - 320px) / (1200 - 320)));           
+            font-size: calc(30px + (70 - 30) * ((100vw - 320px) / (1200 - 320)));
             font-weight: bold;
         }
 
     }
 
     .shape {
-        
+
         svg {
             position: absolute;
             bottom: -28px;
@@ -52,12 +52,12 @@
 
         @include media-breakpoint-down(lg) {
             svg {
-                bottom: -15px;              
+                bottom: -15px;
             }
         }
         @include media-breakpoint-down(sm) {
             svg {
-                bottom: 0;              
+                bottom: 0;
             }
         }
     }
@@ -65,7 +65,7 @@
     &.components-header {
         max-height: 450px !important;
         height: 450px;
-        dispaly: none;
+        display: none;
         background-position: center -140px;
 
 

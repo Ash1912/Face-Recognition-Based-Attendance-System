@@ -47,13 +47,8 @@ cap = cv2.VideoCapture(0)
 
 
 #### If these directories don't exist, create them
-if not os.path.isdir('Attendance'):
-    os.makedirs('Attendance')
 if not os.path.isdir('static/faces'):
     os.makedirs('static/faces')
-if f'Attendance-{datetoday()}.csv' not in os.listdir('Attendance'):
-    with open(f'Attendance/Attendance-{datetoday()}.csv','w') as f:
-        f.write('Name,Roll,Time')
 
 
 #### get a number of total registered users
@@ -131,6 +126,9 @@ def extract_attendance():
     attendance = Attendance()
     attendanceList = attendance.get_attendance()
 
+    if len(attendanceList) == 0: 
+        return (0,0,0,0)
+
 
     names = pd.Series()
     rolls = pd.Series()
@@ -186,6 +184,8 @@ def authenticate():
 @login_required
 def attendance():
     names,rolls,times,l = extract_attendance()
+    if l == 0:
+        return render_template('home.html',totalreg=totalreg(),datetoday2=datetoday2())
     return render_template('home.html',names=names,rolls=rolls,times=times,l=l,totalreg=totalreg(),datetoday2=datetoday2())
 
 #### This function will run when we click on Take Attendance Button

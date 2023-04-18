@@ -1,15 +1,37 @@
-import cv2
 import os
-from flask import Flask,request,render_template
-from datetime import date
-from datetime import datetime
+from datetime import date, datetime
+from functools import wraps
+
+import cv2
 import numpy as np
-from sklearn.neighbors import KNeighborsClassifier
 import pandas as pd
-import joblib
+import pymongo
+import tensorflow as tf
+from flask import Flask, redirect, render_template, request, session
+from keras.layers import Dense, GlobalAveragePooling2D
+from keras.models import Model
+from tensorflow.keras.applications import ResNet50
+from tensorflow.keras.utils import to_categorical
+
+numClasses = 5
 
 #### Defining Flask App
 app = Flask(__name__)
+app.secret_key = 'LegitUser@2023'
+
+client = pymongo.MongoClient("localhost", 27017)
+db = client.user_login_system
+
+# Decorators
+def login_required(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        if 'logged_in' in session:
+            return f(*args, **kwargs)
+        else:
+            return redirect('/authenticate')
+    
+    return wrap
 
 
 #### Saving Date today in 2 different formats
@@ -48,86 +70,165 @@ def extract_faces(img):
 
 #### Identify face using ML model
 def identify_face(facearray):
-    model = joblib.load('static/face_recognition_model.pkl')
-    return model.predict(facearray)
+    with open('face_recognition_model.json', 'r') as json_file:
+        json_savedModel= json_file.read()
+
+    face_recognition_model = tf.keras.models.model_from_json(json_savedModel)
+    face_recognition_model.load_weights('FaceRecognition_weights.h5')
+    return np.argmax(face_recognition_model.predict(facearray)[0])
 
 
 #### A function which trains the model on all the faces available in faces folder
 def train_model():
     faces = []
     labels = []
+    
+    y = []
+    i = 0
     userlist = os.listdir('static/faces')
     for user in userlist:
         for imgname in os.listdir(f'static/faces/{user}'):
             img = cv2.imread(f'static/faces/{user}/{imgname}')
-            resized_face = cv2.resize(img, (50, 50))
-            faces.append(resized_face.ravel())
+            resized_face = cv2.resize(img, (64, 64))
+            faces.append(resized_face)
             labels.append(user)
+            y.append(i)
+        i+=1
     faces = np.array(faces)
-    knn = KNeighborsClassifier(n_neighbors=5)
-    knn.fit(faces,labels)
-    joblib.dump(knn,'static/face_recognition_model.pkl')
+    y = np.array(y)
+    y = to_categorical(y, num_classes = i)
+
+    base_model = ResNet50(weights='imagenet', include_top=False, input_shape=(64, 64, 3))
+
+    x = base_model.output
+    x = GlobalAveragePooling2D()(x)
+    x = Dense(256, activation='relu')(x)
+    predictions = Dense(numClasses, activation='relu')(x)
+ 
+    model = Model(inputs=base_model.input, outputs=predictions)
+    for layer in base_model.layers:
+        layer.trainable = False
+ 
+    model.compile(loss='categorical_crossentropy',
+              optimizer='adam',
+              metrics=['accuracy'])
+    
+    model.fit(faces, y, validation_split=0.2)
+
+    json_model = model.to_json()
+
+
+    with open('face_recognition_model.json', 'w') as json_file:
+        json_file.write(json_model)
+
+    model.save_weights('FaceRecognition_weights.h5')
 
 
 #### Extract info from today's attendance file in attendance folder
 def extract_attendance():
-    df = pd.read_csv(f'Attendance/Attendance-{datetoday()}.csv')
-    names = df['Name']
-    rolls = df['Roll']
-    times = df['Time']
+
+    from user.models import Attendance
+    attendance = Attendance()
+    attendanceList = attendance.get_attendance()
+
+
+    names = pd.Series()
+    rolls = pd.Series()
+    times = pd.Series()
+    l = 0
+    
+    df = pd.DataFrame(attendanceList)
+    names = df['student_name']
+    rolls = df['student_id']
+    times = df['time']
     l = len(df)
+
     return names,rolls,times,l
 
 
 #### Add Attendance of a specific user
 def add_attendance(name):
-    username = name.split('_')[0]
-    userid = name.split('_')[1]
-    current_time = datetime.now().strftime("%H:%M:%S")
+    student_name = name.split('_')[0]
+    student_id = name.split('_')[1]
+
+    attendee = {
+        'student_name' : student_name,
+        'student_id' : student_id,
+    }
+
+    from user.models import Attendance
+
+    attendance = Attendance()
+    return attendance.add_attendance(attendee)
     
-    df = pd.read_csv(f'Attendance/Attendance-{datetoday()}.csv')
-    if int(userid) not in list(df['Roll']):
-        with open(f'Attendance/Attendance-{datetoday()}.csv','a') as f:
-            f.write(f'\n{username},{userid},{current_time}')
+    # df = pd.read_csv(f'Attendance/Attendance-{datetoday()}.csv')
+    # if int(userid) not in list(df['Roll']):
+    #     with open(f'Attendance/Attendance-{datetoday()}.csv','a') as f:
+    #         f.write(f'\n{username},{userid},{current_time}')
 
 
 ################## ROUTING FUNCTIONS #########################
 
-#### Our main page
-@app.route('/')
-def home():
-    names,rolls,times,l = extract_attendance()    
-    return render_template('home.html',names=names,rolls=rolls,times=times,l=l,totalreg=totalreg(),datetoday2=datetoday2()) 
 
+from user import routes
+
+
+#### Our main page
+@app.route('/', methods=['GET'])
+def home(): 
+    return render_template('index.html')
+
+@app.route('/authenticate')
+def authenticate():
+    return render_template('authentication.html')
+
+@app.route('/attendance', methods=['GET'])
+@login_required
+def attendance():
+    names,rolls,times,l = extract_attendance()
+    return render_template('home.html',names=names,rolls=rolls,times=times,l=l,totalreg=totalreg(),datetoday2=datetoday2())
 
 #### This function will run when we click on Take Attendance Button
-@app.route('/start',methods=['GET'])
+@app.route('/attendance/start',methods=['GET','POST'])
+@login_required
 def start():
-    if 'face_recognition_model.pkl' not in os.listdir('static'):
+    if 'face_recognition_model.json' not in os.listdir('.'):
         return render_template('home.html',totalreg=totalreg(),datetoday2=datetoday2(),mess='There is no trained model in the static folder. Please add a new face to continue.') 
+
+    face_names = []
+
+    userlist = os.listdir('static/faces')
+    for user in userlist:
+        face_names.append(user)
 
     cap = cv2.VideoCapture(0)
     ret = True
     while ret:
         ret,frame = cap.read()
+
         if extract_faces(frame) != ():
             (x,y,w,h) = extract_faces(frame)[0]
             cv2.rectangle(frame,(x, y), (x+w, y+h), (255, 0, 20), 2)
-            face = cv2.resize(frame[y:y+h,x:x+w], (50, 50))
-            identified_person = identify_face(face.reshape(1,-1))[0]
-            add_attendance(identified_person)
+            face = cv2.resize(frame[y:y+h,x:x+w], (64, 64))
+            faceArr = []
+            faceArr.append(face)
+            faceArr = np.array(faceArr)
+            identified_person = face_names[identify_face(faceArr)]
             cv2.putText(frame,f'{identified_person}',(30,30),cv2.FONT_HERSHEY_SIMPLEX,1,(255, 0, 20),2,cv2.LINE_AA)
+            if not add_attendance(identified_person):
+                continue
         cv2.imshow('Attendance',frame)
-        if cv2.waitKey(1)==27:
+        if cv2.waitKey(1) == 27:
             break
     cap.release()
     cv2.destroyAllWindows()
-    names,rolls,times,l = extract_attendance()    
+    names,rolls,times,l = extract_attendance()
     return render_template('home.html',names=names,rolls=rolls,times=times,l=l,totalreg=totalreg(),datetoday2=datetoday2()) 
 
 
-#### This function will run when we add a new user
+#### This function will run when we add a new attendee
 @app.route('/add',methods=['GET','POST'])
+@login_required
 def add():
     newusername = request.form['newusername']
     newuserid = request.form['newuserid']
@@ -143,7 +244,7 @@ def add():
             cv2.rectangle(frame,(x, y), (x+w, y+h), (255, 0, 20), 2)
             cv2.putText(frame,f'Images Captured: {i}/50',(30,30),cv2.FONT_HERSHEY_SIMPLEX,1,(255, 0, 20),2,cv2.LINE_AA)
             if j%10==0:
-                name = newusername+'_'+str(i)+'.jpg'
+                name = newusername+str(i)+'.jpg'
                 cv2.imwrite(userimagefolder+'/'+name,frame[y:y+h,x:x+w])
                 i+=1
             j+=1
@@ -156,7 +257,7 @@ def add():
     cv2.destroyAllWindows()
     print('Training Model')
     train_model()
-    names,rolls,times,l = extract_attendance()    
+    names,rolls,times,l = extract_attendance()
     return render_template('home.html',names=names,rolls=rolls,times=times,l=l,totalreg=totalreg(),datetoday2=datetoday2()) 
 
 

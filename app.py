@@ -1,7 +1,7 @@
 import os
-from datetime import date, datetime
+from datetime import date, timedelta
 from functools import wraps
-
+import random
 import cv2
 import numpy as np
 import pandas as pd
@@ -12,12 +12,18 @@ from keras.layers import Dense, GlobalAveragePooling2D
 from keras.models import Model
 from tensorflow.keras.applications import ResNet50
 from tensorflow.keras.utils import to_categorical
+from PIL import Image, ImageEnhance
 
-numClasses = 5
+numClasses = 10
 
 #### Defining Flask App
 app = Flask(__name__)
 app.secret_key = 'LegitUser@2023'
+
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
+    app.permanent_session_lifetime = timedelta(minutes=5)
 
 client = pymongo.MongoClient("localhost", 27017)
 db = client.user_login_system
@@ -55,6 +61,14 @@ if not os.path.isdir('static/faces'):
 def totalreg():
     return len(os.listdir('static/faces'))
 
+#### Increase the contrast of images
+def increase_contrast(path, newusername):
+    inpath, outpath = path, path
+    for i in range(50):
+        fname = newusername+str(i)+'.jpg'
+        im = Image.open(inpath + '/' + fname)
+        ImageEnhance.Contrast(im).enhance(2.5).save(outpath + '/' + fname)
+
 
 #### extract the face from an image
 def extract_faces(img):
@@ -89,16 +103,23 @@ def train_model():
             labels.append(user)
             y.append(i)
         i+=1
-    faces = np.array(faces)
+
+    pairs = list(zip(faces, y))
+
+    random.shuffle(pairs)
+
+    faces_random, y_random = zip(*pairs)
+
+    y = to_categorical(y_random, num_classes = i)
+    faces = np.array(faces_random)
     y = np.array(y)
-    y = to_categorical(y, num_classes = i)
 
     base_model = ResNet50(weights='imagenet', include_top=False, input_shape=(64, 64, 3))
 
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
     x = Dense(256, activation='relu')(x)
-    predictions = Dense(numClasses, activation='relu')(x)
+    predictions = Dense(i, activation='relu')(x)
  
     model = Model(inputs=base_model.input, outputs=predictions)
     for layer in base_model.layers:
@@ -255,6 +276,7 @@ def add():
             break
     cap.release()
     cv2.destroyAllWindows()
+    increase_contrast(userimagefolder, newusername)
     print('Training Model')
     train_model()
     names,rolls,times,l = extract_attendance()

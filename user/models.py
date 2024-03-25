@@ -1,8 +1,12 @@
 from flask import  jsonify, redirect, request, session
 from datetime import datetime
+from utils import datetoday
 from passlib.hash import pbkdf2_sha256
-from app import db, datetoday
 import uuid
+import pymongo
+
+client = pymongo.MongoClient("localhost", 27017)
+db = client.face_recognition_login_system
 
 class User:
 
@@ -47,14 +51,14 @@ class User:
                 return jsonify({"error" : "Invalid credentials"}), 401
         else:
             return jsonify({"error" : "Unknown email address"}), 404
-        
+
 class Attendance:
-    
+
     def add_attendance(attendance, student):
 
         current_time = datetime.now().strftime("%H:%M:%S")
         current_date = datetoday()
-        
+
         attendee = {
             "userid" : session['user']['_id'],
             "student_id" : student['student_id'],
@@ -63,17 +67,17 @@ class Attendance:
             "date" : current_date
         }
 
-        if db.attendance.find_one({"userid" : attendee['userid'], 
-                                   "student_id" : attendee['student_id'], 
+        if db.attendance.find_one({"userid" : attendee['userid'],
+                                   "student_id" : attendee['student_id'],
                                    "date" : attendee['date']}):
             return False
-        
+
         if db.attendance.insert_one(attendee):
             return True
         else:
             return False
-        
-    
+
+
     def get_attendance(self):
         attendanceList = list()
         for attendance in db.attendance.find({"userid" : session['user']['_id'], "date" : datetoday()}):

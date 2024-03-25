@@ -1,52 +1,39 @@
-{% extends "base.html" %}
-
-{% block content %}
+{% extends "base.html" %} {% block content %}
 
 <div class="card-wrapper">
+  <div class="card">
+    <h1 class="center">Create an Account</h1>
 
-    <div class="card">
+    <form name="signup_form">
+      <label for="name">Name</label>
+      <input type="text" name="name" class="field" required />
 
-        <h1 class="center">Create an Account</h1>
+      <label for="email">Email</label>
+      <input type="email" name="email" class="field" required />
 
-        <form name="signup_form">
+      <label for="password">Password</label>
+      <input type="password" name="password" class="field" required />
 
-            <label for="name">Name</label>
-            <input type="text" name="name" class="field" required>
+      <p class="error error--hidden"></p>
 
-            <label for="email">Email</label>
-            <input type="email" name="email" class="field" required>
+      <input type="submit" value="Sign Up" class="btn" />
+    </form>
+  </div>
 
-            <label for="password">Password</label>
-            <input type="password" name="password" class="field" required>
+  <div class="card">
+    <h1 class="center">Log In</h1>
 
+    <form name="login_form">
+      <label for="email">Email</label>
+      <input type="email" name="email" class="field" required />
 
-            <p class="error error--hidden"></p>
+      <label for="password">Password</label>
+      <input type="password" name="password" class="field" required />
 
-            <input type="submit" value="Sign Up" class="btn">
+      <p class="error error--hidden"></p>
 
-        </form>
-
-    </div>
-
-    <div class="card">
-
-        <h1 class="center">Log In</h1>
-
-        <form name="login_form">
-
-            <label for="email">Email</label>
-            <input type="email" name="email" class="field" required>
-
-            <label for="password">Password</label>
-            <input type="password" name="password" class="field" required>
-
-            <p class="error error--hidden"></p>
-
-            <input type="submit" value="Log In" class="btn">
-
-        </form>
-
-    </div>
-
+      <input type="submit" value="Log In" class="btn" />
+    </form>
+  </div>
 </div>
 {% endblock %}
